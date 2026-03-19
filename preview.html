@@ -1,1 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Advanced Website Builder</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+body { margin:0; font-family:Arial; display:flex; height:100vh; }
+#sidebar { width:250px; background:#222; color:white; padding:10px; }
+#canvas { flex:1; position:relative; }
+button { width:100%; margin:5px 0; padding:10px; cursor:pointer; }
+.draggable { padding:8px; background:#444; margin:5px 0; cursor:grab; }
+iframe { width:100%; height:50%; border:none; }
+#threeContainer { width:100%; height:50%; }
+</style>
+</head>
+<body>
 
+<div id="sidebar">
+<h3>Builder</h3>
+<div class="draggable" draggable="true" ondragstart="drag(event)" data-type="h1">Heading</div>
+<div class="draggable" draggable="true" ondragstart="drag(event)" data-type="p">Paragraph</div>
+<div class="draggable" draggable="true" ondragstart="drag(event)" data-type="button">Button</div>
+
+<button onclick="saveProject()">💾 Save</button>
+<button onclick="loadProject()">📂 Load</button>
+<button onclick="generateLink()">🔗 Share</button>
+</div>
+
+<div id="canvas" ondrop="drop(event)" ondragover="allowDrop(event)">
+<iframe id="preview"></iframe>
+<div id="threeContainer"></div>
+</div>
+
+<script>
+let content = "";
+
+function allowDrop(ev) { ev.preventDefault(); }
+
+function drag(ev) {
+  ev.dataTransfer.setData("type", ev.target.dataset.type);
+}
+
+function drop(ev) {
+  ev.preventDefault();
+  const type = ev.dataTransfer.getData("type");
+
+  if(type === "h1") content += "<h1>New Heading</h1>";
+  if(type === "p") content += "<p>New Paragraph</p>";
+  if(type === "button") content += "<button>Click Me</button>";
+
+  updatePreview();
+}
+
+function updatePreview() {
+  document.getElementById("preview").srcdoc = content;
+}
+
+function saveProject() {
+  localStorage.setItem("site", content);
+  alert("Saved!");
+}
+
+function loadProject() {
+  content = localStorage.getItem("site") || "";
+  updatePreview();
+}
+
+function generateLink() {
+  const encoded = btoa(content);
+  const link = location.origin + location.pathname + "?data=" + encoded;
+  prompt("Copy your link:", link);
+}
+
+// Load from URL
+window.onload = () => {
+  const params = new URLSearchParams(window.location.search);
+  if(params.get("data")) {
+    content = atob(params.get("data"));
+    updatePreview();
+  }
+  init3D();
+};
+
+// 3D BUILDER
+function init3D() {
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+  const renderer = new THREE.WebGLRenderer();
+  renderer.setSize(window.innerWidth, window.innerHeight/2);
+  document.getElementById("threeContainer").appendChild(renderer.domElement);
+
+  const geometry = new THREE.BoxGeometry();
+  const material = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe:true });
+  const cube = new THREE.Mesh(geometry, material);
+  scene.add(cube);
+
+  camera.position.z = 5;
+
+  function animate() {
+    requestAnimationFrame(animate);
+    cube.rotation.x += 0.01;
+    cube.rotation.y += 0.01;
+    renderer.render(scene, camera);
+  }
+  animate();
+}
+</script>
+
+</body>
+</html>
